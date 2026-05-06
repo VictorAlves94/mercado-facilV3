@@ -28,7 +28,7 @@ public class ProdutoController {
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanho) {
-        return ResponseEntity.ok(produtoService.listar(busca, categoriaId, pagina, tamanho));
+        return ResponseEntity.ok(produtoService.listar(busca, categoriaId,null, pagina, tamanho));
     }
 
     @GetMapping("/{id}")

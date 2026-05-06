@@ -7,6 +7,7 @@ import com.mercadofacil.dto.response.MovimentacaoEstoqueResponse;
 import com.mercadofacil.dto.response.PageResponse;
 import com.mercadofacil.dto.response.ProdutoResponse;
 import com.mercadofacil.entity.Categoria;
+import com.mercadofacil.entity.Loja;
 import com.mercadofacil.entity.Produto;
 import com.mercadofacil.entity.Usuario;
 import com.mercadofacil.exception.BusinessException;
@@ -29,6 +30,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -41,13 +43,16 @@ public class ProdutoService {
     private final UsuarioRepository usuarioRepository;
     private final EstoqueService estoqueService;
     private final AuditService auditService;
+    private final LojaService lojaService;
 
     // ─── Listagem e Busca ──────────────────────────────────────────────────────
 
-    public PageResponse<ProdutoResponse> listar(String busca, Long categoriaId, int pagina, int tamanho) {
+    public PageResponse<ProdutoResponse> listar(String busca, Long categoriaId,
+                                                Long lojaId, int pagina, int tamanho) {
+        Long lojaFiltro = lojaId != null ? lojaId : lojaService.getLojaIdDoUsuario();
         Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by("nome").ascending());
         Page<ProdutoResponse> page = produtoRepository
-                .buscarProdutos(busca, categoriaId, pageable)
+                .buscarProdutos(lojaFiltro, busca, categoriaId, pageable)
                 .map(ProdutoResponse::from);
         return PageResponse.from(page);
     }
@@ -57,7 +62,8 @@ public class ProdutoService {
     }
 
     public Optional<ProdutoResponse> buscarPorCodigoBarras(String codigo) {
-        return produtoRepository.findByCodigoBarras(codigo)
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+        return produtoRepository.findByCodigoBarrasAndLojaId(codigo, lojaId)
                 .filter(Produto::isAtivo)
                 .map(ProdutoResponse::from);
     }
@@ -70,7 +76,8 @@ public class ProdutoService {
         validarCodigoBarras(request.codigoBarras(), null);
 
         Categoria categoria = resolverCategoria(request.categoriaId());
-        Produto produto = buildProduto(new Produto(), request, categoria);
+        Loja loja = lojaService.getLojaDoUsuarioLogado();
+        Produto produto = buildProduto(new Produto(), request, categoria, loja);
 
         Produto salvo = produtoRepository.save(produto);
         auditService.produtoCriado(salvo.getId(), salvo.getNome());
@@ -93,7 +100,7 @@ public class ProdutoService {
         String nomeBefore = produto.getNome();
 
         Categoria categoria = resolverCategoria(request.categoriaId());
-        buildProduto(produto, request, categoria);
+        buildProduto(produto, request, categoria, produto.getLoja());
 
         Produto salvo = produtoRepository.save(produto);
         auditService.produtoEditado(salvo.getId(), salvo.getNome(),
@@ -146,24 +153,28 @@ public class ProdutoService {
     // ─── Alertas ─────────────────────────────────────────────────────────────
 
     public AlertasEstoqueResponse getAlertas() {
+        Long lojaId = lojaService.getLojaIdDoUsuario();       // ← nova
         LocalDate hoje = LocalDate.now();
-        List<ProdutoResponse> baixo    = produtoRepository.findEstoqueBaixo().stream().map(ProdutoResponse::from).toList();
-        List<ProdutoResponse> zerado   = produtoRepository.findEstoqueZerado().stream().map(ProdutoResponse::from).toList();
-        List<ProdutoResponse> validade = produtoRepository.findValidadeProxima(hoje.plusDays(7)).stream().map(ProdutoResponse::from).toList();
-        List<ProdutoResponse> vencidos = produtoRepository.findVencidos(hoje).stream().map(ProdutoResponse::from).toList();
+        List<ProdutoResponse> baixo    = produtoRepository.findEstoqueBaixo(lojaId).stream().map(ProdutoResponse::from).toList();
+        List<ProdutoResponse> zerado   = produtoRepository.findEstoqueZerado(lojaId).stream().map(ProdutoResponse::from).toList();
+        List<ProdutoResponse> validade = produtoRepository.findValidadeProxima(hoje.plusDays(7), lojaId).stream().map(ProdutoResponse::from).toList();
+        List<ProdutoResponse> vencidos = produtoRepository.findVencidos(hoje, lojaId).stream().map(ProdutoResponse::from).toList();
         return AlertasEstoqueResponse.of(baixo, zerado, validade, vencidos);
     }
 
     public List<ProdutoResponse> listarEstoqueBaixo() {
-        return produtoRepository.findEstoqueBaixo().stream().map(ProdutoResponse::from).toList();
+        return produtoRepository.findEstoqueBaixo(lojaService.getLojaIdDoUsuario())
+                .stream().map(ProdutoResponse::from).toList();
     }
 
     public List<ProdutoResponse> listarVencidos() {
-        return produtoRepository.findVencidos(LocalDate.now()).stream().map(ProdutoResponse::from).toList();
+        return produtoRepository.findVencidos(LocalDate.now(), lojaService.getLojaIdDoUsuario())
+                .stream().map(ProdutoResponse::from).toList();
     }
 
     public List<ProdutoResponse> listarValidadeProxima(int dias) {
-        return produtoRepository.findValidadeProxima(LocalDate.now().plusDays(dias))
+        return produtoRepository.findValidadeProxima(LocalDate.now().plusDays(dias),
+                        lojaService.getLojaIdDoUsuario())
                 .stream().map(ProdutoResponse::from).toList();
     }
 
@@ -176,11 +187,13 @@ public class ProdutoService {
         return p;
     }
 
-    private Produto buildProduto(Produto produto, ProdutoRequest req, Categoria categoria) {
+    private Produto buildProduto(Produto produto, ProdutoRequest req,
+                                 Categoria categoria, Loja loja) {
         produto.setCodigoBarras(req.codigoBarras());
         produto.setNome(req.nome());
         produto.setDescricao(req.descricao());
         produto.setCategoria(categoria);
+        produto.setLoja(loja);                                 // ← nova
         produto.setQuantidadeEstoque(req.quantidadeEstoque());
         produto.setEstoqueMinimo(req.estoqueMinimo() != null ? req.estoqueMinimo() : 10);
         produto.setPrecoCusto(req.precoCusto());

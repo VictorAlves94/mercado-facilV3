@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.mercadofacil.entity.Loja;
 
 @Entity
 @Table(name = "vendas")
@@ -58,6 +59,10 @@ public class Venda {
 
     @Column(name = "motivo_cancelamento")
     private String motivoCancelamento;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loja_id")
+    private Loja loja;
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;

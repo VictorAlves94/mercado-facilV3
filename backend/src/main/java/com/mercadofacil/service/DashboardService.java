@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.mercadofacil.service.LojaService;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class DashboardService {
     private final DespesaRepository despesaRepository;
     private final ProdutoRepository produtoRepository;
     private final CaixaRepository caixaRepository;
+    private final LojaService lojaService;
 
     public DashboardResponse getResumoHoje() {
         LocalDate hoje        = LocalDate.now();
@@ -43,10 +45,11 @@ public class DashboardService {
         BigDecimal lucroEstimado  = totalVendas.subtract(totalDespesas);
 
         // Alertas de estoque
-        long estoqueBaixo    = produtoRepository.countEstoqueBaixo();
-        long estoqueZerado   = produtoRepository.countEstoqueZerado();
-        long validadeProxima = produtoRepository.findValidadeProxima(hoje.plusDays(7)).size();
-        long vencidos        = produtoRepository.findVencidos(hoje).size();
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+        long estoqueBaixo    = produtoRepository.countEstoqueBaixo(lojaId);
+        long estoqueZerado   = produtoRepository.countEstoqueZerado(lojaId);
+        long validadeProxima = produtoRepository.findValidadeProxima(hoje.plusDays(7), lojaId).size();
+        long vencidos        = produtoRepository.findVencidos(hoje, lojaId).size();
         long totalAlertas    = estoqueBaixo + estoqueZerado + validadeProxima + vencidos;
 
         // Caixa atual

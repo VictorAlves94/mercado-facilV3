@@ -6,6 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.mercadofacil.entity.Loja;
 
 @Entity
 @Table(name = "caixas")
@@ -52,6 +53,10 @@ public class Caixa {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fechado_por")
     private Usuario fechadoPor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loja_id")
+    private Loja loja;
 
     @Column(name = "aberto_em", nullable = false)
     private LocalDateTime abertoEm;

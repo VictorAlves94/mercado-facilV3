@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import com.mercadofacil.entity.Loja;
 
 @Entity
 @Table(name = "usuarios")
@@ -35,6 +36,10 @@ public class Usuario implements UserDetails {
 
     @Column(nullable = false)
     private boolean ativo = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loja_id")
+    private Loja lojaAtual;
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;

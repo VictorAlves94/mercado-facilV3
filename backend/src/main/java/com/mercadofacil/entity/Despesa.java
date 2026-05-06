@@ -6,7 +6,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
+import com.mercadofacil.entity.Loja;
 @Entity
 @Table(name = "despesas")
 @Getter @Setter @Builder
@@ -42,6 +42,11 @@ public class Despesa {
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loja_id")
+    private Loja loja;
+
 
     @PrePersist
     protected void onCreate() {

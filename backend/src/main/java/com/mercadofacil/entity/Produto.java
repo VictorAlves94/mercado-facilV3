@@ -1,5 +1,6 @@
 package com.mercadofacil.entity;
 
+import com.mercadofacil.entity.Loja;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -66,6 +67,10 @@ public class Produto {
     protected void onUpdate() {
         atualizadoEm = LocalDateTime.now();
     }
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loja_id")
+    private Loja loja;
 
     // Helpers de negócio
     public boolean isEstoqueBaixo() {
