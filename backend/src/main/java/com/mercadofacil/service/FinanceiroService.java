@@ -151,6 +151,7 @@ public class FinanceiroService {
         BigDecimal margemLucro  = totalVendas.compareTo(BigDecimal.ZERO) > 0
                 ? lucroLiquido.divide(totalVendas, 4, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(100))
+                .setScale(1, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
         // ── Fiado ──────────────────────────────────────────────────────────────

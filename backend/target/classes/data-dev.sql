@@ -67,7 +67,7 @@ INSERT INTO tipos_despesa (nome, descricao, ativo) VALUES ('Aluguel', 'Aluguel d
 INSERT INTO tipos_despesa (nome, descricao, ativo) VALUES ('Manutenção', 'Reparos e manutenção', true);
 INSERT INTO tipos_despesa (nome, descricao, ativo) VALUES ('Outros', 'Outras despesas', true);
 
--- Auditoria 
+-- Auditoria
 INSERT INTO audit_log (usuario_nome, acao, descricao, entidade, entidade_referencia, criado_em)
 VALUES ('João Operador', 'VENDA_CANCELADA',
         'João Operador cancelou a venda V20250601002 — Motivo: Produto errado',
