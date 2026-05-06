@@ -33,6 +33,7 @@ public class FinanceiroService {
     private final VendaRepository vendaRepository;
     private final FiadoRepository fiadoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AuditService auditService;
 
     // ─── Tipos de Despesa ─────────────────────────────────────────────────────
 
@@ -76,6 +77,10 @@ public class FinanceiroService {
                 .build();
 
         Despesa salva = despesaRepository.save(despesa);
+
+        auditService.despesaLancada(salva.getId(), salva.getDescricao(),
+                salva.getValor().toPlainString()); // ← linha nova
+
         log.info("💰 Despesa lançada: {} — R$ {} ({})", salva.getDescricao(), salva.getValor(), tipo.getNome());
         return DespesaResponse.from(salva);
     }
@@ -100,6 +105,10 @@ public class FinanceiroService {
     @Transactional
     public void excluirDespesa(Long id) {
         Despesa despesa = findDespesaOrThrow(id);
+
+        auditService.despesaExcluida(id, despesa.getDescricao(),
+                despesa.getValor().toPlainString());
+
         despesaRepository.delete(despesa);
         log.info("🗑️  Despesa excluída: {} (ID {})", despesa.getDescricao(), id);
     }

@@ -14,8 +14,9 @@ CURRENT_TIMESTAMP
 );
 -- Usuário operador (senha: operador123)
 INSERT INTO usuarios (nome, email, senha, perfil, ativo, criado_em)
-VALUES ('João Operador', 'operador@mercadofacil.com',
-        '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.',
+VALUES ('João Operador',
+'operador@mercadofacil.com',
+        '$2a$10$yzNyEjWtXZfB6usWgat7Nu2Cr2VspDJm8QWGZs2Cm3q0BW.QKtifW',
         'OPERADOR', true, CURRENT_TIMESTAMP);
 
 -- Categorias de produtos
@@ -66,3 +67,18 @@ INSERT INTO tipos_despesa (nome, descricao, ativo) VALUES ('Aluguel', 'Aluguel d
 INSERT INTO tipos_despesa (nome, descricao, ativo) VALUES ('Manutenção', 'Reparos e manutenção', true);
 INSERT INTO tipos_despesa (nome, descricao, ativo) VALUES ('Outros', 'Outras despesas', true);
 
+-- Auditoria 
+INSERT INTO audit_log (usuario_nome, acao, descricao, entidade, entidade_referencia, criado_em)
+VALUES ('João Operador', 'VENDA_CANCELADA',
+        'João Operador cancelou a venda V20250601002 — Motivo: Produto errado',
+        'Venda', 'V20250601002', CURRENT_TIMESTAMP - INTERVAL '1' HOUR);
+
+INSERT INTO audit_log (usuario_nome, acao, descricao, entidade, entidade_referencia, valor_anterior, valor_posterior, criado_em)
+VALUES ('Administrador', 'ESTOQUE_AJUSTE',
+        'Administrador alterou estoque de Arroz 5kg de 30 para 20 unidades — Inventário',
+        'Produto', 'Arroz 5kg', '30', '20', CURRENT_TIMESTAMP - INTERVAL '3' HOUR);
+
+INSERT INTO audit_log (usuario_nome, acao, descricao, entidade, criado_em)
+VALUES ('Administrador', 'CAIXA_ABERTO',
+        'Administrador abriu o caixa #1 — Fundo: R$ 100.00',
+        'Caixa', CURRENT_TIMESTAMP - INTERVAL '8' HOUR);

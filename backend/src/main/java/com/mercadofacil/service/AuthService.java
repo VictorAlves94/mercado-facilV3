@@ -18,14 +18,24 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
+    private final AuditService auditService;
 
     public AuthResponse login(LoginRequest request) {
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.senha()));
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.senha()));
 
-        Usuario usuario = (Usuario) auth.getPrincipal();
-        String token = jwtService.gerarToken(usuario);
-        return AuthResponse.of(token, usuario);
+            Usuario usuario = (Usuario) auth.getPrincipal();
+            String token = jwtService.gerarToken(usuario);
+
+            auditService.loginRealizado(request.email()); // ← login ok
+
+            return AuthResponse.of(token, usuario);
+
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+            auditService.loginFalhou(request.email()); // ← senha errada
+            throw e; // relança para o GlobalExceptionHandler tratar
+        }
     }
 
     public AuthResponse me(String email) {

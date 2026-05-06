@@ -34,6 +34,7 @@ public class VendaService {
     private final UsuarioRepository usuarioRepository;
     private final CaixaService caixaService;
     private final EstoqueService estoqueService;
+    private final AuditService auditService;
 
     // contador thread-safe para número de venda no dia
     private static final AtomicLong contadorVenda = new AtomicLong(0);
@@ -125,6 +126,9 @@ public class VendaService {
         // 7. Finaliza
         venda.setStatus(Venda.StatusVenda.FINALIZADA);
         Venda salva = vendaRepository.save(venda);
+        auditService.vendaCriada(salva.getId(), salva.getNumeroVenda(),
+                salva.getValorTotal().toPlainString());
+
 
         // 8. Atualiza totais no caixa
         caixaService.registrarPagamentoNoCaixa(caixa, request.formaPagamento(), salva.getValorTotal());
@@ -173,6 +177,9 @@ public class VendaService {
         venda.setCanceladoEm(LocalDateTime.now());
 
         Venda salva = vendaRepository.save(venda);
+        auditService.vendaCancelada(salva.getId(), salva.getNumeroVenda(),
+                request.motivo());
+
 
         log.info("❌ Venda {} CANCELADA por {} — Motivo: {}",
                 salva.getNumeroVenda(), operador.getNome(), request.motivo());

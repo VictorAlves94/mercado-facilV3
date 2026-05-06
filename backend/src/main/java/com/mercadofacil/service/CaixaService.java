@@ -32,6 +32,8 @@ public class CaixaService {
     private final CaixaRepository caixaRepository;
     private final VendaRepository vendaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AuditService auditService;
+
 
     // ─── Consultas ────────────────────────────────────────────────────────────
 
@@ -75,6 +77,8 @@ public class CaixaService {
                 .build();
 
         Caixa salvo = caixaRepository.save(caixa);
+        auditService.caixaAberto(salvo.getId(),
+                request.valorAbertura().toPlainString());
         log.info("🏪 Caixa #{} ABERTO por {} — Saldo inicial: R$ {}",
                 salvo.getId(), operador.getNome(), request.valorAbertura());
         return CaixaResponse.from(salvo);
@@ -111,6 +115,9 @@ public class CaixaService {
         caixa.setObservacaoFechamento(request.observacao());
 
         Caixa salvo = caixaRepository.save(caixa);
+        auditService.caixaFechado(salvo.getId(),
+                salvo.getTotalVendas().toPlainString(),
+                diferenca.toPlainString());
 
         log.info("🔒 Caixa #{} FECHADO por {} — Total vendas: R$ {} | Qtd: {} | Diferença: R$ {}",
                 salvo.getId(), operador.getNome(), salvo.getTotalVendas(), qtdVendas, diferenca);

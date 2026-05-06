@@ -40,6 +40,7 @@ public class ProdutoService {
     private final MovimentacaoEstoqueRepository movimentacaoRepository;
     private final UsuarioRepository usuarioRepository;
     private final EstoqueService estoqueService;
+    private final AuditService auditService;
 
     // ─── Listagem e Busca ──────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ public class ProdutoService {
         Produto produto = buildProduto(new Produto(), request, categoria);
 
         Produto salvo = produtoRepository.save(produto);
+        auditService.produtoCriado(salvo.getId(), salvo.getNome());
 
         // Se já começa com estoque, registra entrada inicial
         if (salvo.getQuantidadeEstoque() > 0) {
@@ -88,11 +90,14 @@ public class ProdutoService {
         Produto produto = findAtivoOrThrow(id);
         validarPrecos(request);
         validarCodigoBarras(request.codigoBarras(), id);
+        String nomeBefore = produto.getNome();
 
         Categoria categoria = resolverCategoria(request.categoriaId());
         buildProduto(produto, request, categoria);
 
         Produto salvo = produtoRepository.save(produto);
+        auditService.produtoEditado(salvo.getId(), salvo.getNome(),
+                "produto", nomeBefore, salvo.getNome());
         log.info("✏️  Produto atualizado: '{}' (ID: {})", salvo.getNome(), salvo.getId());
         return ProdutoResponse.from(salvo);
     }
@@ -102,6 +107,7 @@ public class ProdutoService {
         Produto produto = findAtivoOrThrow(id);
         produto.setAtivo(false);
         produtoRepository.save(produto);
+        auditService.produtoDesativado(id, produto.getNome());
         log.info("🗑️  Produto desativado: '{}' (ID: {})", produto.getNome(), id);
     }
 
@@ -111,6 +117,8 @@ public class ProdutoService {
     public ProdutoResponse ajustarEstoque(Long id, AjusteEstoqueRequest request) {
         Produto produto = findAtivoOrThrow(id);
         Usuario operador = getUsuarioLogado();
+        int antes = produto.getQuantidadeEstoque();
+
 
         switch (request.tipo()) {
             case ENTRADA ->
@@ -122,6 +130,8 @@ public class ProdutoService {
         }
 
         Produto salvo = produtoRepository.save(produto);
+        auditService.estoqueAjustado(salvo.getId(), salvo.getNome(),
+                antes, salvo.getQuantidadeEstoque(), request.motivo());
         return ProdutoResponse.from(salvo);
     }
 
