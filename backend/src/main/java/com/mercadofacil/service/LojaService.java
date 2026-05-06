@@ -10,6 +10,7 @@ import com.mercadofacil.repository.LojaRepository;
 import com.mercadofacil.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,13 +52,17 @@ public class LojaService {
                 .orElse(null);
     }
 
-    /**
-     * Retorna o ID da loja do usuário logado.
-     * null = sem restrição (admin).
-     */
     public Long getLojaIdDoUsuario() {
-        Loja loja = getLojaDoUsuarioLogado();
-        return loja != null ? loja.getId() : null;
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || auth.getName() == null) {
+                return null;
+            }
+            Loja loja = getLojaDoUsuarioLogado();
+            return loja != null ? loja.getId() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Transactional
