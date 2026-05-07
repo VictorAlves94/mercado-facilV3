@@ -1,5 +1,6 @@
 package com.mercadofacil.controller;
 
+import com.mercadofacil.dto.request.AutorizarRequest;
 import com.mercadofacil.dto.request.LoginRequest;
 import com.mercadofacil.dto.response.AuthResponse;
 import com.mercadofacil.service.AuthService;
@@ -25,5 +26,11 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<AuthResponse> me(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(authService.me(userDetails.getUsername()));
+    }
+
+    @PostMapping("/autorizar")
+    public ResponseEntity<Void> autorizar(@RequestBody AutorizarRequest request) {
+        authService.autorizar(request.email(), request.senha(), request.perfisPermitidos());
+        return ResponseEntity.ok().build();
     }
 }
