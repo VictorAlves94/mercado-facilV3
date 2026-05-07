@@ -1,9 +1,9 @@
 # ================================================
-# MercadoFácil - Configuração Principal
+# CaixaBSB- Configuração Principal
 # ================================================
 spring:
   application:
-    name: mercadofacil-backend
+    name: caixabsb-backend
   profiles:
     active: dev
 
@@ -69,9 +69,9 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:mercadofacildb}
-    username: ${DB_USER:mercadofacil}
-    password: ${DB_PASS:mercadofacil123}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:caixabsb}
+    username: ${DB_USER:caixabsbdb}
+    password: ${DB_PASS:caixabsb123}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2

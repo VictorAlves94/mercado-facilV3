@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>com.mercadofacil</groupId>
-    <artifactId>mercadofacil-backend</artifactId>
+    <artifactId>caixabsb-backend</artifactId>
     <version>1.0.0</version>
-    <name>MercadoFácil Backend</name>
+    <name>caixabsb-backend</name>
     <description>Sistema de Gestão para Pequenos Mercados e Mercearias</description>
 
     <properties>
