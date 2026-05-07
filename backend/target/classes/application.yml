@@ -23,7 +23,7 @@ server:
 app:
   jwt:
     secret: bWVyY2Fkb2ZhY2lsLWJhY2tlbmQtc2VjcmV0LWtleS0yMDI2LW11aXRvLXNlZ3VyYQ==
-    expiration: 86400000   # 24 horas em ms
+    expiration: 604800000   # 7 dias em ms
   estoque:
     alerta-minimo: 10      # alertar abaixo de 10 unidades
   versao: 1.0.0

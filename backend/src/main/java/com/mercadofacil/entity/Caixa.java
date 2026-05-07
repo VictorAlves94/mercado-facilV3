@@ -43,6 +43,12 @@ public class Caixa {
     @Column(name = "total_vendas", precision = 10, scale = 2)
     private BigDecimal totalVendas = BigDecimal.ZERO;
 
+    @Column(name = "total_sangrias", precision = 10, scale = 2)
+    private BigDecimal totalSangrias = BigDecimal.ZERO;
+
+    @Column(name = "total_suprimentos", precision = 10, scale = 2)
+    private BigDecimal totalSuprimentos = BigDecimal.ZERO;
+
     @Column(name = "observacao_fechamento")
     private String observacaoFechamento;
 
@@ -75,6 +81,8 @@ public class Caixa {
         if (totalCartaoDebito == null) totalCartaoDebito = BigDecimal.ZERO;
         if (totalCartaoCredito == null) totalCartaoCredito = BigDecimal.ZERO;
         if (totalVendas == null) totalVendas = BigDecimal.ZERO;
+        if (totalSangrias == null)    totalSangrias    = BigDecimal.ZERO;
+        if (totalSuprimentos == null) totalSuprimentos = BigDecimal.ZERO;
     }
 
     public BigDecimal getTotalGeral() {

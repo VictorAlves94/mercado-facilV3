@@ -2,7 +2,9 @@ package com.mercadofacil.controller;
 
 import com.mercadofacil.dto.request.AbrirCaixaRequest;
 import com.mercadofacil.dto.request.FecharCaixaRequest;
+import com.mercadofacil.dto.request.MovimentacaoCaixaRequest;
 import com.mercadofacil.dto.response.CaixaResponse;
+import com.mercadofacil.dto.response.MovimentacaoCaixaResponse;
 import com.mercadofacil.dto.response.ResumoFechamentoCaixaResponse;
 import com.mercadofacil.service.CaixaService;
 import jakarta.validation.Valid;
@@ -63,5 +65,19 @@ public class CaixaController {
     public ResponseEntity<ResumoFechamentoCaixaResponse> fechar(
             @Valid @RequestBody FecharCaixaRequest request) {
         return ResponseEntity.ok(caixaService.fechar(request));
+    }
+
+    /** efetuar sangria e suplementação */
+    @PostMapping("/movimentacao")
+    public ResponseEntity<MovimentacaoCaixaResponse> registrarMovimentacao(
+            @Valid @RequestBody MovimentacaoCaixaRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(caixaService.registrarMovimentacao(request));
+    }
+
+    @GetMapping("/{id}/movimentacoes")
+    public ResponseEntity<List<MovimentacaoCaixaResponse>> listarMovimentacoes(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(caixaService.listarMovimentacoes(id));
     }
 }

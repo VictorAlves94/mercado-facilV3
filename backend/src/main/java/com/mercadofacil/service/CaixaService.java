@@ -2,14 +2,18 @@ package com.mercadofacil.service;
 
 import com.mercadofacil.dto.request.AbrirCaixaRequest;
 import com.mercadofacil.dto.request.FecharCaixaRequest;
+import com.mercadofacil.dto.request.MovimentacaoCaixaRequest;
 import com.mercadofacil.dto.response.CaixaResponse;
+import com.mercadofacil.dto.response.MovimentacaoCaixaResponse;
 import com.mercadofacil.dto.response.ResumoFechamentoCaixaResponse;
 import com.mercadofacil.entity.Caixa;
+import com.mercadofacil.entity.MovimentacaoCaixa;
 import com.mercadofacil.entity.Usuario;
 import com.mercadofacil.entity.Venda;
 import com.mercadofacil.exception.CaixaException;
 import com.mercadofacil.exception.ResourceNotFoundException;
 import com.mercadofacil.repository.CaixaRepository;
+import com.mercadofacil.repository.MovimentacaoCaixaRepository;
 import com.mercadofacil.repository.UsuarioRepository;
 import com.mercadofacil.repository.VendaRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +37,7 @@ public class CaixaService {
     private final VendaRepository vendaRepository;
     private final UsuarioRepository usuarioRepository;
     private final AuditService auditService;
+    private final MovimentacaoCaixaRepository movimentacaoCaixaRepository;
 
 
     // ─── Consultas ────────────────────────────────────────────────────────────
@@ -84,6 +89,42 @@ public class CaixaService {
         return CaixaResponse.from(salvo);
     }
 
+
+    // ─── Sangria ─────────────────────────────────────────────────────────
+    @Transactional
+    public MovimentacaoCaixaResponse registrarMovimentacao(MovimentacaoCaixaRequest request) {
+        Caixa caixa = getCaixaAbertoEntity();
+        Usuario operador = getUsuarioLogado();
+
+        MovimentacaoCaixa mov = MovimentacaoCaixa.builder()
+                .caixa(caixa)
+                .tipo(request.tipo())
+                .valor(request.valor())
+                .motivo(request.motivo())
+                .operador(operador)
+                .build();
+
+        movimentacaoCaixaRepository.save(mov);
+
+        if (request.tipo() == MovimentacaoCaixa.TipoMovimentacaoCaixa.SANGRIA) {
+            caixa.setTotalSangrias(caixa.getTotalSangrias().add(request.valor()));
+            caixa.setTotalDinheiro(caixa.getTotalDinheiro().subtract(request.valor()));
+        } else {
+            caixa.setTotalSuprimentos(caixa.getTotalSuprimentos().add(request.valor()));
+            caixa.setTotalDinheiro(caixa.getTotalDinheiro().add(request.valor()));
+        }
+        caixaRepository.save(caixa);
+
+        log.info("💰 {} de R$ {} no caixa #{} — {}",
+                request.tipo(), request.valor(), caixa.getId(), request.motivo());
+
+        return MovimentacaoCaixaResponse.from(mov);
+    }
+
+    public List<MovimentacaoCaixaResponse> listarMovimentacoes(Long caixaId) {
+        return movimentacaoCaixaRepository.findByCaixaIdOrderByCriadoEmDesc(caixaId)
+                .stream().map(MovimentacaoCaixaResponse::from).toList();
+    }
     // ─── Fechar Caixa ─────────────────────────────────────────────────────────
 
     @Transactional
