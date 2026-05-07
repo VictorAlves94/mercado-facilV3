@@ -82,3 +82,31 @@ INSERT INTO audit_log (usuario_nome, acao, descricao, entidade, criado_em)
 VALUES ('Administrador', 'CAIXA_ABERTO',
         'Administrador abriu o caixa #1 — Fundo: R$ 100.00',
         'Caixa', CURRENT_TIMESTAMP - INTERVAL '8' HOUR);
+
+
+
+        -- ================================================
+        -- Lojas de teste
+        -- ================================================
+        INSERT INTO lojas (nome, codigo, endereco, telefone, cnpj, ativa, criado_em)
+        VALUES ('Loja Centro', 'CENTRO', 'Quadra 1, Bloco A, Loja 10 — Brasília/DF', '(61) 3333-1111', '11.222.333/0001-44', true, CURRENT_TIMESTAMP);
+
+        INSERT INTO lojas (nome, codigo, endereco, telefone, cnpj, ativa, criado_em)
+        VALUES ('Loja Norte', 'NORTE', 'Quadra 412 Norte, Bloco C, Loja 5 — Brasília/DF', '(61) 3333-2222', '11.222.333/0002-25', true, CURRENT_TIMESTAMP);
+
+        -- ================================================
+        -- Usuário gerente (senha: gerente123 — mesmo hash do admin)
+        -- ================================================
+        INSERT INTO usuarios (nome, email, senha, perfil, ativo, loja_id, criado_em)
+        VALUES (
+          'Maria Gerente',
+          'gerente@mercadofacil.com',
+          '$2a$10$yzNyEjWtXZfB6usWgat7Nu2Cr2VspDJm8QWGZs2Cm3q0BW.QKtifW',
+          'GERENTE',
+          true,
+          1,
+          CURRENT_TIMESTAMP
+        );
+
+        -- Vincular operador à loja 1
+        UPDATE usuarios SET loja_id = 1 WHERE email = 'operador@mercadofacil.com';
