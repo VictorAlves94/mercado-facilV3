@@ -7,7 +7,7 @@ FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
-RUN apk add --no-cache maven && mvn clean package -DskipTests -q
+RUN apk add --no-cache maven && mvn clean package -Dmaven.test.skip=true -q
 
 # Estágio 2: Runtime
 FROM eclipse-temurin:17-jre-alpine
