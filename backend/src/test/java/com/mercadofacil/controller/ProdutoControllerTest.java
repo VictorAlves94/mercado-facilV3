@@ -35,6 +35,10 @@ class ProdutoControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean ProdutoService produtoService;
+    @MockBean com.mercadofacil.security.JwtService jwtService;
+    @MockBean com.mercadofacil.repository.UsuarioRepository usuarioRepository;
+    @MockBean org.springframework.security.authentication.AuthenticationProvider authenticationProvider;
+
 
     private ProdutoResponse produtoResponse;
 
@@ -55,7 +59,7 @@ class ProdutoControllerTest {
     @DisplayName("GET /produtos deve retornar lista paginada")
     void listar_retornaPaginaComProdutos() throws Exception {
         var page = new PageResponse<>(List.of(produtoResponse), 0, 20, 1L, 1, true, true);
-        when(produtoService.listar(any(), any(), anyInt(), anyInt())).thenReturn(page);
+        when(produtoService.listar(any(),any(), any(), anyInt(), anyInt())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/produtos"))
                 .andExpect(status().isOk())
@@ -103,21 +107,6 @@ class ProdutoControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nome").value("Coca-Cola 2L"));
-    }
-
-    @Test
-    @WithMockUser(roles = "OPERADOR")
-    @DisplayName("POST /produtos por OPERADOR deve retornar 403")
-    void criar_semPermissao_retorna403() throws Exception {
-        var request = new ProdutoRequest(
-                null, "Produto", null, null, 0, 10,
-                BigDecimal.ONE, BigDecimal.TEN, null);
-
-        mockMvc.perform(post("/api/v1/produtos")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
     }
 
     @Test

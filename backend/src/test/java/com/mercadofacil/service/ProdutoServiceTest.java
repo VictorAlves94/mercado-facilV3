@@ -152,10 +152,10 @@ class ProdutoServiceTest {
         @Test
         @DisplayName("Listar deve retornar página com produtos ativos")
         void listar_retornaPaginaComProdutos() {
-            when(produtoRepository.buscarProdutos(any(), any(), any(Pageable.class)))
+            when(produtoRepository.buscarProdutos(any(), any(),any(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(produtoMock)));
 
-            var page = produtoService.listar(null, null, 0, 20);
+            var page = produtoService.listar(null, null,null, 0, 20);
 
             assertThat(page.content()).hasSize(1);
             assertThat(page.totalElementos()).isEqualTo(1);
@@ -201,10 +201,10 @@ class ProdutoServiceTest {
                     .quantidadeEstoque(0).estoqueMinimo(10)
                     .precoCusto(BigDecimal.ONE).precoVenda(BigDecimal.TEN).ativo(true).build();
 
-            when(produtoRepository.findEstoqueBaixo()).thenReturn(List.of(prodBaixo));
-            when(produtoRepository.findEstoqueZerado()).thenReturn(List.of(prodZerado));
-            when(produtoRepository.findValidadeProxima(any())).thenReturn(List.of());
-            when(produtoRepository.findVencidos(any())).thenReturn(List.of());
+            when(produtoRepository.findEstoqueBaixo(any())).thenReturn(List.of(prodBaixo));
+            when(produtoRepository.findEstoqueZerado(any())).thenReturn(List.of(prodZerado));
+            when(produtoRepository.findValidadeProxima(any(),any())).thenReturn(List.of());
+            when(produtoRepository.findVencidos(any(),any())).thenReturn(List.of());
 
             AlertasEstoqueResponse alertas = produtoService.getAlertas();
 
@@ -216,10 +216,10 @@ class ProdutoServiceTest {
         @Test
         @DisplayName("Sem alertas deve retornar listas vazias com total zero")
         void getAlertas_semAlertas_retornaZero() {
-            when(produtoRepository.findEstoqueBaixo()).thenReturn(List.of());
-            when(produtoRepository.findEstoqueZerado()).thenReturn(List.of());
-            when(produtoRepository.findValidadeProxima(any())).thenReturn(List.of());
-            when(produtoRepository.findVencidos(any())).thenReturn(List.of());
+            when(produtoRepository.findEstoqueBaixo(any())).thenReturn(List.of());
+            when(produtoRepository.findEstoqueZerado(any())).thenReturn(List.of());
+            when(produtoRepository.findValidadeProxima(any(),any())).thenReturn(List.of());
+            when(produtoRepository.findVencidos(any(),any())).thenReturn(List.of());
 
             AlertasEstoqueResponse alertas = produtoService.getAlertas();
 

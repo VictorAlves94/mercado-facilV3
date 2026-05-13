@@ -24,6 +24,8 @@ public class CaixaController {
 
     private final CaixaService caixaService;
 
+
+
     /** Status do caixa atual (aberto ou não) */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> status() {

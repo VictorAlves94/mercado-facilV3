@@ -36,18 +36,18 @@ class DashboardServiceTest {
         when(vendaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("1500.00"));
         when(vendaRepository.countFinalizadasNoPeriodo(any(), any())).thenReturn(25L);
         when(despesaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("300.00"));
-        when(produtoRepository.countEstoqueBaixo()).thenReturn(3L);
-        when(produtoRepository.countEstoqueZerado()).thenReturn(1L);
-        when(produtoRepository.findValidadeProxima(any())).thenReturn(List.of());
-        when(produtoRepository.findVencidos(any())).thenReturn(List.of());
+        when(produtoRepository.countEstoqueBaixo(any())).thenReturn(3L);
+        when(produtoRepository.countEstoqueZerado(any())).thenReturn(1L);
+        when(produtoRepository.findValidadeProxima(any(),any())).thenReturn(List.of());
+        when(produtoRepository.findVencidos(any(),any())).thenReturn(List.of());
         when(caixaRepository.existsByStatus(Caixa.StatusCaixa.ABERTO)).thenReturn(true);
 
         var resumo = dashboardService.getResumoHoje();
 
-        assertThat(resumo.totalVendas()).isEqualByComparingTo("1500.00");
-        assertThat(resumo.totalDespesas()).isEqualByComparingTo("300.00");
-        assertThat(resumo.lucroEstimado()).isEqualByComparingTo("1200.00");
-        assertThat(resumo.quantidadeVendas()).isEqualTo(25L);
+        assertThat(resumo.totalVendasHoje()).isEqualByComparingTo("1500.00");
+        assertThat(resumo.totalDespesasHoje()).isEqualByComparingTo("300.00");
+        assertThat(resumo.lucroEstimadoHoje()).isEqualByComparingTo("1200.00");
+        assertThat(resumo.quantidadeVendasHoje()).isEqualTo(25L);
         assertThat(resumo.produtosEstoqueBaixo()).isEqualTo(3L);
         assertThat(resumo.caixaAberto()).isTrue();
     }
@@ -58,15 +58,15 @@ class DashboardServiceTest {
         when(vendaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(BigDecimal.ZERO);
         when(vendaRepository.countFinalizadasNoPeriodo(any(), any())).thenReturn(0L);
         when(despesaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(BigDecimal.ZERO);
-        when(produtoRepository.countEstoqueBaixo()).thenReturn(0L);
-        when(produtoRepository.countEstoqueZerado()).thenReturn(0L);
-        when(produtoRepository.findValidadeProxima(any())).thenReturn(List.of());
-        when(produtoRepository.findVencidos(any())).thenReturn(List.of());
+        when(produtoRepository.countEstoqueBaixo(any())).thenReturn(0L);
+        when(produtoRepository.countEstoqueZerado(any())).thenReturn(0L);
+        when(produtoRepository.findValidadeProxima(any(),any())).thenReturn(List.of());
+        when(produtoRepository.findVencidos(any(),any())).thenReturn(List.of());
         when(caixaRepository.existsByStatus(Caixa.StatusCaixa.ABERTO)).thenReturn(false);
 
         var resumo = dashboardService.getResumoHoje();
 
-        assertThat(resumo.lucroEstimado()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(resumo.lucroEstimadoHoje()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(resumo.caixaAberto()).isFalse();
     }
 }
