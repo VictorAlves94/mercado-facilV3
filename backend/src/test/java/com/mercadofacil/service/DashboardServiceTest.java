@@ -30,6 +30,9 @@ class DashboardServiceTest {
     @Mock CaixaRepository caixaRepository;
     @InjectMocks DashboardService dashboardService;
 
+    @Mock
+    LojaService lojaService;
+
     @Test
     @DisplayName("Resumo do dia deve calcular lucro corretamente")
     void getResumoHoje_calculaLucroCorretamente() {
