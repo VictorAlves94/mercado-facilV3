@@ -42,6 +42,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
@@ -64,7 +65,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
-                "https://mercado-facil-v3-front-f7ikqeap6.vercel.app"
+                "https://mercado-facil-v3-front-mxqv60zgb.vercel.app"
         ));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
