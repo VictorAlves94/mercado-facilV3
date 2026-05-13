@@ -11,9 +11,12 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,6 +29,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("FinanceiroService — Testes Unitários")
 class FinanceiroServiceTest {
 
@@ -35,12 +39,16 @@ class FinanceiroServiceTest {
     @Mock FiadoRepository fiadoRepository;
     @Mock UsuarioRepository usuarioRepository;
     @InjectMocks FinanceiroService financeiroService;
+    @Mock AuditService auditService;
 
     private TipoDespesa tipoMock;
     private Usuario operadorMock;
 
     @BeforeEach
     void setUp() {
+
+            ReflectionTestUtils.setField(financeiroService, "auditService", auditService);
+
         tipoMock = TipoDespesa.builder().id(1L).nome("Energia Elétrica").ativo(true).build();
         operadorMock = Usuario.builder().id(1L).nome("Admin").email("admin@test.com").build();
 

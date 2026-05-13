@@ -35,6 +35,7 @@ public class FinanceiroService {
     private final UsuarioRepository usuarioRepository;
     private final AuditService auditService;
 
+
     // ─── Tipos de Despesa ─────────────────────────────────────────────────────
 
     public List<TipoDespesaResponse> listarTiposDespesa() {

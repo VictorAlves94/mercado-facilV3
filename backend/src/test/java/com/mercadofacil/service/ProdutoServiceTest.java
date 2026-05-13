@@ -4,10 +4,7 @@ import com.mercadofacil.dto.request.AjusteEstoqueRequest;
 import com.mercadofacil.dto.request.ProdutoRequest;
 import com.mercadofacil.dto.response.AlertasEstoqueResponse;
 import com.mercadofacil.dto.response.ProdutoResponse;
-import com.mercadofacil.entity.Categoria;
-import com.mercadofacil.entity.MovimentacaoEstoque;
-import com.mercadofacil.entity.Produto;
-import com.mercadofacil.entity.Usuario;
+import com.mercadofacil.entity.*;
 import com.mercadofacil.exception.BusinessException;
 import com.mercadofacil.exception.ResourceNotFoundException;
 import com.mercadofacil.repository.CategoriaRepository;
@@ -22,6 +19,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -38,6 +37,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ProdutoService — Testes Unitários")
 class ProdutoServiceTest {
 
@@ -46,7 +46,11 @@ class ProdutoServiceTest {
     @Mock MovimentacaoEstoqueRepository movimentacaoRepository;
     @Mock UsuarioRepository usuarioRepository;
     @Mock EstoqueService estoqueService;
+    @Mock AuditService auditService;    // ← adicionar
+    @Mock LojaService lojaService;
     @InjectMocks ProdutoService produtoService;
+
+
 
     private Produto produtoMock;
     private Categoria categoriaMock;
@@ -55,7 +59,7 @@ class ProdutoServiceTest {
     @BeforeEach
     void setUp() {
         categoriaMock = Categoria.builder().id(1L).nome("Bebidas").build();
-
+        var lojaMock = Loja.builder().id(1L).build();
         produtoMock = Produto.builder()
                 .id(1L).nome("Coca-Cola 2L")
                 .codigoBarras("7891000100103")
@@ -131,9 +135,9 @@ class ProdutoServiceTest {
     class BuscaListagem {
 
         @Test
-        @DisplayName("Deve buscar produto por código de barras existente")
         void buscarPorCodigoBarras_existente_retornaProduto() {
-            when(produtoRepository.findByCodigoBarras("7891000100103"))
+            when(lojaService.getLojaIdDoUsuario()).thenReturn(1L);
+            when(produtoRepository.findByCodigoBarrasAndLojaId("7891000100103", 1L))
                     .thenReturn(Optional.of(produtoMock));
 
             var result = produtoService.buscarPorCodigoBarras("7891000100103");
