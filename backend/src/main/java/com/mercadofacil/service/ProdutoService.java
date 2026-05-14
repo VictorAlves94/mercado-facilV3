@@ -47,28 +47,22 @@ public class ProdutoService {
 
     // ─── Listagem e Busca ──────────────────────────────────────────────────────
 
-  public PageResponse<ProdutoResponse> listar(String busca, Long categoriaId,
+ public PageResponse<ProdutoResponse> listar(String busca, Long categoriaId,
                                             Long lojaId, int pagina, int tamanho) {
 
-    if (busca != null && busca.trim().isEmpty()) {
-        busca = null;
+    Long lojaFiltro = lojaId != null ? lojaId : lojaService.getLojaIdDoUsuario();
+
+    Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by("nome").ascending());
+
+    Page<Produto> page;
+
+    if (busca == null || busca.trim().isEmpty()) {
+        page = produtoRepository.listarProdutos(lojaFiltro, categoriaId, pageable);
+    } else {
+        page = produtoRepository.buscarProdutos(lojaFiltro, busca.trim(), categoriaId, pageable);
     }
 
-    Long lojaFiltro = lojaId != null
-            ? lojaId
-            : lojaService.getLojaIdDoUsuario();
-
-    Pageable pageable = PageRequest.of(
-            pagina,
-            tamanho,
-            Sort.by("nome").ascending()
-    );
-
-    Page<ProdutoResponse> page = produtoRepository
-            .buscarProdutos(lojaFiltro, busca, categoriaId, pageable)
-            .map(ProdutoResponse::from);
-
-    return PageResponse.from(page);
+    return PageResponse.from(page.map(ProdutoResponse::from));
 }
 
     public ProdutoResponse buscarPorId(Long id) {
