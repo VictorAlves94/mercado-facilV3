@@ -75,6 +75,7 @@ public class ProdutoService {
         return ProdutoResponse.from(findAtivoOrThrow(id));
     }
 
+    
     public Optional<ProdutoResponse> buscarPorCodigoBarras(String codigo) {
         Long lojaId = lojaService.getLojaIdDoUsuario();
         return produtoRepository.findByCodigoBarrasAndLojaId(codigo, lojaId)
