@@ -17,33 +17,34 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
  Optional<Produto> findByCodigoBarras(String codigoBarras);
 
-    @Query("""
-        SELECT p FROM Produto p
-        WHERE p.codigoBarras = :codigo
-        AND p.ativo = true
-        AND (:lojaId IS NULL OR p.loja.id = :lojaId)
-        """)
-    Optional<Produto> findByCodigoBarrasAndLojaId(
-            @Param("codigo") String codigoBarras,
-            @Param("lojaId") Long lojaId);
+@Query("""
+    SELECT p FROM Produto p
+    LEFT JOIN p.categoria
+    WHERE p.ativo = true
+    AND (:lojaId IS NULL OR p.loja.id = :lojaId)
+    AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
+    """)
+Page<Produto> listarProdutos(
+        @Param("lojaId") Long lojaId,
+        @Param("categoriaId") Long categoriaId,
+        Pageable pageable);
 
-    @Query("""
-        SELECT p FROM Produto p
-        LEFT JOIN FETCH p.categoria
-        WHERE p.ativo = true
-        AND (:lojaId IS NULL OR p.loja.id = :lojaId)
-        AND (
-            :busca IS NULL OR :busca = '' OR
-            LOWER(p.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%')) OR
-            p.codigoBarras LIKE CONCAT('%', CAST(:busca AS string), '%')
-        )
-        AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
-        """)
-    Page<Produto> buscarProdutos(
-            @Param("lojaId") Long lojaId,
-            @Param("busca") String busca,
-            @Param("categoriaId") Long categoriaId,
-            Pageable pageable);
+@Query("""
+    SELECT p FROM Produto p
+    LEFT JOIN p.categoria
+    WHERE p.ativo = true
+    AND (:lojaId IS NULL OR p.loja.id = :lojaId)
+    AND (
+        LOWER(p.nome) LIKE CONCAT('%', LOWER(:busca), '%')
+        OR p.codigoBarras LIKE CONCAT('%', :busca, '%')
+    )
+    AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
+    """)
+Page<Produto> buscarProdutos(
+        @Param("lojaId") Long lojaId,
+        @Param("busca") String busca,
+        @Param("categoriaId") Long categoriaId,
+        Pageable pageable);
 
 
     // ─── Alertas com filtro de loja (null = todas as lojas) ──────────────────
