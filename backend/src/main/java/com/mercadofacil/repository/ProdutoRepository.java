@@ -15,10 +15,8 @@ import java.util.Optional;
 @Repository
 public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
-    // ─── Mantido original (usado em validação de código de barras) ────────────
-    Optional<Produto> findByCodigoBarras(String codigoBarras);
+ Optional<Produto> findByCodigoBarras(String codigoBarras);
 
-    // ─── Novo: busca por código de barras já filtrada pela loja ───────────────
     @Query("""
         SELECT p FROM Produto p
         WHERE p.codigoBarras = :codigo
@@ -26,25 +24,27 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
         AND (:lojaId IS NULL OR p.loja.id = :lojaId)
         """)
     Optional<Produto> findByCodigoBarrasAndLojaId(
-            @Param("codigo")  String codigoBarras,
-            @Param("lojaId")  Long lojaId);
+            @Param("codigo") String codigoBarras,
+            @Param("lojaId") Long lojaId);
 
-    // ─── Busca paginada com filtro de loja ────────────────────────────────────
     @Query("""
         SELECT p FROM Produto p
         LEFT JOIN FETCH p.categoria
         WHERE p.ativo = true
         AND (:lojaId IS NULL OR p.loja.id = :lojaId)
-        AND (:busca IS NULL OR
-             LOWER(p.nome) LIKE LOWER(CONCAT('%', :busca, '%')) OR
-             p.codigoBarras LIKE CONCAT('%', :busca, '%'))
+        AND (
+            :busca IS NULL OR :busca = '' OR
+            LOWER(p.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%')) OR
+            p.codigoBarras LIKE CONCAT('%', CAST(:busca AS string), '%')
+        )
         AND (:categoriaId IS NULL OR p.categoria.id = :categoriaId)
         """)
     Page<Produto> buscarProdutos(
-            @Param("lojaId")      Long lojaId,
-            @Param("busca")       String busca,
+            @Param("lojaId") Long lojaId,
+            @Param("busca") String busca,
             @Param("categoriaId") Long categoriaId,
             Pageable pageable);
+
 
     // ─── Alertas com filtro de loja (null = todas as lojas) ──────────────────
     @Query("SELECT p FROM Produto p WHERE p.ativo = true AND p.quantidadeEstoque <= p.estoqueMinimo AND (:lojaId IS NULL OR p.loja.id = :lojaId)")
