@@ -15,15 +15,63 @@ public interface FiadoRepository extends JpaRepository<Fiado, Long> {
 
     List<Fiado> findByStatusOrderByNomeClienteAsc(Fiado.StatusFiado status);
 
-    @Query("SELECT f FROM Fiado f WHERE LOWER(f.nomeCliente) LIKE LOWER(CONCAT('%', :nome, '%')) ORDER BY f.nomeCliente ASC")
-    List<Fiado> findByNomeClienteContainingIgnoreCase(@Param("nome") String nome);
+    @Query("""
+        SELECT f
+        FROM Fiado f
+        WHERE LOWER(f.nomeCliente) LIKE LOWER(CONCAT('%', :nome, '%'))
+        ORDER BY f.nomeCliente ASC
+    """)
+    List<Fiado> findByNomeClienteContainingIgnoreCase(
+            @Param("nome") String nome
+    );
 
-    Optional<Fiado> findByNomeClienteIgnoreCaseAndStatus(String nomeCliente, Fiado.StatusFiado status);
+    Optional<Fiado> findByNomeClienteIgnoreCaseAndStatus(
+            String nomeCliente,
+            Fiado.StatusFiado status
+    );
 
-    // Total em aberto para relatório financeiro
-    @Query("SELECT COALESCE(SUM(f.saldoDevedor), 0) FROM Fiado f WHERE f.status = 'ATIVO'")
+    // ─────────────────────────────────────────────────────────────
+    // Financeiro geral
+    // ─────────────────────────────────────────────────────────────
+
+    @Query("""
+        SELECT COALESCE(SUM(f.saldoDevedor), 0)
+        FROM Fiado f
+        WHERE f.status = 'ATIVO'
+    """)
     BigDecimal sumSaldoDevedorAtivo();
 
-    @Query("SELECT COUNT(f) FROM Fiado f WHERE f.status = 'ATIVO' AND f.saldoDevedor > 0")
+    @Query("""
+        SELECT COUNT(f)
+        FROM Fiado f
+        WHERE f.status = 'ATIVO'
+          AND f.saldoDevedor > 0
+    """)
     long countClientesComSaldoAtivo();
+
+    // ─────────────────────────────────────────────────────────────
+    // Multi-loja
+    // ─────────────────────────────────────────────────────────────
+
+    @Query("""
+        SELECT COALESCE(SUM(f.saldoDevedor), 0)
+        FROM Fiado f
+        WHERE f.status = 'ATIVO'
+          AND f.saldoDevedor > 0
+          AND f.loja.id = :lojaId
+    """)
+    BigDecimal sumSaldoDevedorAtivoPorLoja(
+            @Param("lojaId") Long lojaId
+    );
+
+    @Query("""
+        SELECT COUNT(f)
+        FROM Fiado f
+        WHERE f.status = 'ATIVO'
+          AND f.saldoDevedor > 0
+          AND f.loja.id = :lojaId
+    """)
+    long countClientesComSaldoAtivoPorLoja(
+            @Param("lojaId") Long lojaId
+    );
 }

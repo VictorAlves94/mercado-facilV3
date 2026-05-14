@@ -29,6 +29,34 @@ public interface VendaRepository extends JpaRepository<Venda, Long> {
     @Query("SELECT COUNT(v) FROM Venda v WHERE v.criadoEm >= :inicio AND v.criadoEm < :fim AND v.status = 'FINALIZADA'")
     long countFinalizadasNoPeriodo(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
 
+    @Query("""
+    SELECT COALESCE(SUM(v.valorTotal), 0)
+    FROM Venda v
+    WHERE v.criadoEm >= :inicio
+      AND v.criadoEm < :fim
+      AND v.status = 'FINALIZADA'
+      AND v.loja.id = :lojaId
+""")
+    BigDecimal sumTotalNoPeriodoPorLoja(
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim,
+            @Param("lojaId") Long lojaId
+    );
+
+    @Query("""
+    SELECT COUNT(v)
+    FROM Venda v
+    WHERE v.criadoEm >= :inicio
+      AND v.criadoEm < :fim
+      AND v.status = 'FINALIZADA'
+      AND v.loja.id = :lojaId
+""")
+    long countFinalizadasNoPeriodoPorLoja(
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim,
+            @Param("lojaId") Long lojaId
+    );
+
     @Query("SELECT v FROM Venda v LEFT JOIN FETCH v.itens i LEFT JOIN FETCH i.produto WHERE v.id = :id")
     Optional<Venda> findByIdWithItens(@Param("id") Long id);
 

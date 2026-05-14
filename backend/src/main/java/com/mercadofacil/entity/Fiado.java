@@ -45,6 +45,10 @@ public class Fiado {
     @JoinColumn(name = "registrado_por", nullable = false)
     private Usuario registradoPor;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loja_id")
+    private Loja loja;
+
     @OneToMany(mappedBy = "fiado", cascade = CascadeType.ALL)
     private List<LancamentoFiado> lancamentos;
 

@@ -27,12 +27,18 @@ public class FiadoService {
     private final FiadoRepository fiadoRepository;
     private final LancamentoFiadoRepository lancamentoFiadoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final LojaService lojaService;
 
     // ─── Consultas ────────────────────────────────────────────────────────────
 
     public List<FiadoResponse> listarAtivos() {
+        Long lojaId = lojaService.getLojaIdDoUsuario();
         return fiadoRepository.findByStatusOrderByNomeClienteAsc(Fiado.StatusFiado.ATIVO)
-                .stream().map(FiadoResponse::from).toList();
+                .stream()
+                .filter(f -> lojaId == null ||
+                        (f.getLoja() != null && f.getLoja().getId().equals(lojaId)))
+                .map(FiadoResponse::from)
+                .toList();
     }
 
     public List<FiadoResponse> listarTodos() {
@@ -74,6 +80,7 @@ public class FiadoService {
                 .limiteCredito(request.limiteCredito())
                 .status(Fiado.StatusFiado.ATIVO)
                 .registradoPor(operador)
+                .loja(lojaService.getLojaDoUsuarioLogado())
                 .build();
 
         Fiado salvo = fiadoRepository.save(fiado);

@@ -40,7 +40,7 @@ class UsuarioServiceTest {
     @BeforeEach
     void setUp() {
         adminMock = Usuario.builder()
-                .id(1L).nome("Admin").email("admin@mercadofacil.com")
+                .id(1L).nome("Admin").email("admin@caixabsb.com")
                 .senha("$hashed$").perfil(Usuario.Perfil.ADMIN).ativo(true).build();
     }
 
@@ -50,11 +50,11 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve criar usuário com dados válidos")
         void criar_dadosValidos_retornaUsuario() {
-            var req = new UsuarioRequest("João Silva", "joao@mercadofacil.com", "senha123", Usuario.Perfil.OPERADOR);
-            when(usuarioRepository.existsByEmail("joao@mercadofacil.com")).thenReturn(false);
+            var req = new UsuarioRequest("João Silva", "joao@caixabsb.com", "senha123", Usuario.Perfil.OPERADOR,null);
+            when(usuarioRepository.existsByEmail("joao@caixabsb.com")).thenReturn(false);
             when(passwordEncoder.encode("senha123")).thenReturn("$hashed$");
             var usuarioSalvo = Usuario.builder().id(2L).nome("João Silva")
-                    .email("joao@mercadofacil.com").perfil(Usuario.Perfil.OPERADOR).ativo(true).build();
+                    .email("joao@caixabsb.com").perfil(Usuario.Perfil.OPERADOR).ativo(true).build();
             when(usuarioRepository.save(any())).thenReturn(usuarioSalvo);
 
             UsuarioResponse resp = usuarioService.criar(req);
@@ -67,12 +67,12 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve lançar exceção se email já cadastrado")
         void criar_emailDuplicado_lancaBusinessException() {
-            var req = new UsuarioRequest("Outro", "admin@mercadofacil.com", "123456", Usuario.Perfil.OPERADOR);
-            when(usuarioRepository.existsByEmail("admin@mercadofacil.com")).thenReturn(true);
+            var req = new UsuarioRequest("Outro", "admin@caixabsb.com", "123456", Usuario.Perfil.OPERADOR, null);
+            when(usuarioRepository.existsByEmail("admin@caixabsb.com")).thenReturn(true);
 
             assertThatThrownBy(() -> usuarioService.criar(req))
                     .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("admin@mercadofacil.com");
+                    .hasMessageContaining("admin@caixabsb.com");
         }
     }
 
@@ -82,7 +82,7 @@ class UsuarioServiceTest {
         @BeforeEach
         void mockSecurity() {
             var auth = mock(Authentication.class);
-            when(auth.getName()).thenReturn("admin@mercadofacil.com");
+            when(auth.getName()).thenReturn("admin@caixabsb.com");
             var ctx = mock(SecurityContext.class);
             when(ctx.getAuthentication()).thenReturn(auth);
             SecurityContextHolder.setContext(ctx);
@@ -91,7 +91,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve alterar senha com senha atual correta")
         void alterarSenha_senhaCorreta_atualiza() {
-            when(usuarioRepository.findByEmail("admin@mercadofacil.com")).thenReturn(Optional.of(adminMock));
+            when(usuarioRepository.findByEmail("admin@caixabsb.com")).thenReturn(Optional.of(adminMock));
             when(passwordEncoder.matches("senha123", "$hashed$")).thenReturn(true);
             when(passwordEncoder.encode("novaSenha456")).thenReturn("$newhash$");
             when(usuarioRepository.save(any())).thenReturn(adminMock);
@@ -105,7 +105,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve lançar exceção se senha atual incorreta")
         void alterarSenha_senhaAtualErrada_lancaExcecao() {
-            when(usuarioRepository.findByEmail("admin@mercadofacil.com")).thenReturn(Optional.of(adminMock));
+            when(usuarioRepository.findByEmail("admin@caixabsb.com")).thenReturn(Optional.of(adminMock));
             when(passwordEncoder.matches("senhaErrada", "$hashed$")).thenReturn(false);
 
             assertThatThrownBy(() -> usuarioService.alterarSenha(new AlterarSenhaRequest("senhaErrada", "nova")))

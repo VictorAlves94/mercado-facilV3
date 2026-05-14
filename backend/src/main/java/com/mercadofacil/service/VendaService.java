@@ -35,6 +35,7 @@ public class VendaService {
     private final CaixaService caixaService;
     private final EstoqueService estoqueService;
     private final AuditService auditService;
+    private final LojaService lojaService;
 
     // contador thread-safe para número de venda no dia
     private static final AtomicLong contadorVenda = new AtomicLong(0);
@@ -60,9 +61,15 @@ public class VendaService {
 
     public List<VendaResponse> listarHoje() {
         LocalDateTime inicio = LocalDateTime.now().toLocalDate().atStartOfDay();
-        LocalDateTime fim = inicio.plusDays(1);
+        LocalDateTime fim    = inicio.plusDays(1);
+        Long lojaId          = lojaService.getLojaIdDoUsuario();
+
         return vendaRepository.findFinalizadasNoPeriodo(inicio, fim)
-                .stream().map(VendaResponse::from).toList();
+                .stream()
+                .filter(v -> lojaId == null ||
+                        (v.getLoja() != null && v.getLoja().getId().equals(lojaId)))
+                .map(VendaResponse::from)
+                .toList();
     }
 
     // ─── Registrar Venda ──────────────────────────────────────────────────────
@@ -72,6 +79,7 @@ public class VendaService {
         // 1. Valida caixa aberto
         Caixa caixa = caixaService.getCaixaAbertoEntity();
         Usuario operador = getUsuarioLogado();
+        Loja loja = lojaService.getLojaDoUsuarioLogado();
 
         // 2. Monta a venda
         Venda venda = Venda.builder()
@@ -83,6 +91,7 @@ public class VendaService {
                 .valorDesconto(request.descontoGeral())
                 .valorSubtotal(BigDecimal.ZERO)
                 .valorTotal(BigDecimal.ZERO)
+                .loja(loja)
                 .build();
 
         // 3. Processa cada item

@@ -34,7 +34,7 @@ public class FinanceiroService {
     private final FiadoRepository fiadoRepository;
     private final UsuarioRepository usuarioRepository;
     private final AuditService auditService;
-
+    private final LojaService lojaService;
 
     // ─── Tipos de Despesa ─────────────────────────────────────────────────────
 
@@ -75,6 +75,7 @@ public class FinanceiroService {
                 .formaPagamento(request.formaPagamento())
                 .observacao(request.observacao())
                 .registradoPor(operador)
+                .loja(lojaService.getLojaDoUsuarioLogado())
                 .build();
 
         Despesa salva = despesaRepository.save(despesa);
@@ -129,42 +130,40 @@ public class FinanceiroService {
     public RelatorioFinanceiroResponse gerarRelatorio(LocalDate inicio, LocalDate fim) {
         validarPeriodo(inicio, fim);
 
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+
         LocalDateTime dtInicio = inicio.atStartOfDay();
-        LocalDateTime dtFim    = fim.plusDays(1).atStartOfDay();
+        LocalDateTime dtFim = fim.plusDays(1).atStartOfDay();
 
-        // ── Receitas ──────────────────────────────────────────────────────────
-        BigDecimal totalVendas = vendaRepository.sumTotalNoPeriodo(dtInicio, dtFim);
-        long qtdVendas         = vendaRepository.countFinalizadasNoPeriodo(dtInicio, dtFim);
+        BigDecimal totalVendas = vendaRepository.sumTotalNoPeriodoPorLoja(dtInicio, dtFim, lojaId);
+        long qtdVendas = vendaRepository.countFinalizadasNoPeriodoPorLoja(dtInicio, dtFim, lojaId);
 
-        // ── Despesas ──────────────────────────────────────────────────────────
-        BigDecimal totalDespesas = despesaRepository.sumTotalNoPeriodo(inicio, fim);
+        BigDecimal totalDespesas = despesaRepository.sumTotalNoPeriodoPorLoja(inicio, fim, lojaId);
 
         List<RelatorioFinanceiroResponse.DespesaPorCategoria> porCategoria =
-                despesaRepository.findTotalAgrupadoPorTipo(inicio, fim).stream()
+                despesaRepository.findTotalAgrupadoPorTipoPorLoja(inicio, fim, lojaId).stream()
                         .map(row -> new RelatorioFinanceiroResponse.DespesaPorCategoria(
                                 (String) row[0],
                                 (BigDecimal) row[1],
                                 ((Number) row[2]).longValue()))
                         .toList();
 
-        // ── Resultado ─────────────────────────────────────────────────────────
         BigDecimal lucroLiquido = totalVendas.subtract(totalDespesas);
-        BigDecimal margemLucro  = totalVendas.compareTo(BigDecimal.ZERO) > 0
+
+        BigDecimal margemLucro = totalVendas.compareTo(BigDecimal.ZERO) > 0
                 ? lucroLiquido.divide(totalVendas, 4, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(100))
-                .setScale(1, RoundingMode.HALF_UP)
+                  .multiply(BigDecimal.valueOf(100))
+                  .setScale(1, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
-        // ── Fiado ──────────────────────────────────────────────────────────────
-        BigDecimal totalFiadoAberto = fiadoRepository.sumSaldoDevedorAtivo();
-        long clientesFiado          = fiadoRepository.countClientesComSaldoAtivo();
+        BigDecimal totalFiadoAberto = fiadoRepository.sumSaldoDevedorAtivoPorLoja(lojaId);
+        long clientesFiado = fiadoRepository.countClientesComSaldoAtivoPorLoja(lojaId);
 
-        // ── Resumo diário (apenas quando período > 1 dia) ─────────────────────
         List<RelatorioFinanceiroResponse.ResumoDia> resumoDiario = List.of();
         long diasNoPeriodo = ChronoUnit.DAYS.between(inicio, fim) + 1;
 
         if (diasNoPeriodo > 1 && diasNoPeriodo <= 31) {
-            resumoDiario = construirResumoDiario(inicio, fim);
+            resumoDiario = construirResumoDiario(inicio, fim, lojaId);
         }
 
         return new RelatorioFinanceiroResponse(
@@ -180,16 +179,23 @@ public class FinanceiroService {
     // ─── Saldo do Caixa do Dia ───────────────────────────────────────────────
 
     public SaldoCaixaDiaResponse getSaldoHoje() {
-        LocalDate hoje   = LocalDate.now();
-        LocalDateTime dt = hoje.atStartOfDay();
+        LocalDate hoje = LocalDate.now();
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+
+        LocalDateTime dtInicio = hoje.atStartOfDay();
         LocalDateTime dtFim = hoje.plusDays(1).atStartOfDay();
 
-        BigDecimal vendas   = vendaRepository.sumTotalNoPeriodo(dt, dtFim);
-        BigDecimal despesas = despesaRepository.sumTotalNoPeriodo(hoje, hoje);
-        BigDecimal saldo    = vendas.subtract(despesas);
+        BigDecimal vendas = vendaRepository.sumTotalNoPeriodoPorLoja(dtInicio, dtFim, lojaId);
+        BigDecimal despesas = despesaRepository.sumTotalNoPeriodoPorLoja(hoje, hoje, lojaId);
+        BigDecimal saldo = vendas.subtract(despesas);
 
-        return new SaldoCaixaDiaResponse(hoje, vendas, despesas, saldo,
-                saldo.compareTo(BigDecimal.ZERO) >= 0 ? "POSITIVO" : "NEGATIVO");
+        return new SaldoCaixaDiaResponse(
+                hoje,
+                vendas,
+                despesas,
+                saldo,
+                saldo.compareTo(BigDecimal.ZERO) >= 0 ? "POSITIVO" : "NEGATIVO"
+        );
     }
 
     public record SaldoCaixaDiaResponse(
@@ -203,26 +209,35 @@ public class FinanceiroService {
     // ─── Helpers privados ─────────────────────────────────────────────────────
 
     private List<RelatorioFinanceiroResponse.ResumoDia> construirResumoDiario(
-            LocalDate inicio, LocalDate fim) {
+            LocalDate inicio, LocalDate fim, Long lojaId) {
 
-        // Busca totais de despesa por dia
         Map<LocalDate, BigDecimal> despesasPorDia = despesaRepository
-                .findTotalPorDia(inicio, fim).stream()
+                .findTotalPorDiaPorLoja(inicio, fim, lojaId).stream()
                 .collect(Collectors.toMap(
                         row -> (LocalDate) row[0],
-                        row -> (BigDecimal) row[1]));
+                        row -> (BigDecimal) row[1]
+                ));
 
-        // Busca vendas para cada dia individualmente e monta a lista
         List<RelatorioFinanceiroResponse.ResumoDia> lista = new ArrayList<>();
+
         LocalDate cursor = inicio;
         while (!cursor.isAfter(fim)) {
             LocalDateTime dtI = cursor.atStartOfDay();
             LocalDateTime dtF = cursor.plusDays(1).atStartOfDay();
-            BigDecimal venda  = vendaRepository.sumTotalNoPeriodo(dtI, dtF);
-            BigDecimal desp   = despesasPorDia.getOrDefault(cursor, BigDecimal.ZERO);
-            lista.add(new RelatorioFinanceiroResponse.ResumoDia(cursor, venda, desp, venda.subtract(desp)));
+
+            BigDecimal venda = vendaRepository.sumTotalNoPeriodoPorLoja(dtI, dtF, lojaId);
+            BigDecimal desp = despesasPorDia.getOrDefault(cursor, BigDecimal.ZERO);
+
+            lista.add(new RelatorioFinanceiroResponse.ResumoDia(
+                    cursor,
+                    venda,
+                    desp,
+                    venda.subtract(desp)
+            ));
+
             cursor = cursor.plusDays(1);
         }
+
         return lista;
     }
 

@@ -38,20 +38,23 @@ public class CaixaService {
     private final UsuarioRepository usuarioRepository;
     private final AuditService auditService;
     private final MovimentacaoCaixaRepository movimentacaoCaixaRepository;
+    private final LojaService lojaService;
+
 
 
     // ─── Consultas ────────────────────────────────────────────────────────────
 
     public CaixaResponse getCaixaAtual() {
-        return caixaRepository.findByStatus(Caixa.StatusCaixa.ABERTO)
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+        return caixaRepository.findByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, lojaId)
                 .map(CaixaResponse::from)
                 .orElseThrow(CaixaException::semCaixaAberto);
     }
 
     public boolean hasCaixaAberto() {
-        return caixaRepository.existsByStatus(Caixa.StatusCaixa.ABERTO);
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+        return caixaRepository.existsByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, lojaId);
     }
-
     public CaixaResponse buscarPorId(Long id) {
         return CaixaResponse.from(findOrThrow(id));
     }
@@ -79,6 +82,7 @@ public class CaixaService {
                 .totalCartaoCredito(BigDecimal.ZERO)
                 .totalVendas(BigDecimal.ZERO)
                 .abertoPor(operador)
+                .loja(lojaService.getLojaDoUsuarioLogado())
                 .build();
 
         Caixa salvo = caixaRepository.save(caixa);

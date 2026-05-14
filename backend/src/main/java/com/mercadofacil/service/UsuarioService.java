@@ -3,9 +3,11 @@ package com.mercadofacil.service;
 import com.mercadofacil.dto.request.AlterarSenhaRequest;
 import com.mercadofacil.dto.request.UsuarioRequest;
 import com.mercadofacil.dto.response.UsuarioResponse;
+import com.mercadofacil.entity.Loja;
 import com.mercadofacil.entity.Usuario;
 import com.mercadofacil.exception.BusinessException;
 import com.mercadofacil.exception.ResourceNotFoundException;
+import com.mercadofacil.repository.LojaRepository;
 import com.mercadofacil.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LojaRepository lojaRepository;
 
     public List<UsuarioResponse> listarTodos() {
         return usuarioRepository.findAll().stream()
@@ -39,11 +42,14 @@ public class UsuarioService {
         if (usuarioRepository.existsByEmail(request.email())) {
             throw new BusinessException("Já existe um usuário com o email: " + request.email());
         }
+        Loja loja = resolverLoja(request.lojaId());
+
         Usuario usuario = Usuario.builder()
                 .nome(request.nome())
                 .email(request.email())
                 .senha(passwordEncoder.encode(request.senha()))
                 .perfil(request.perfil())
+                .lojaAtual(loja)
                 .ativo(true)
                 .build();
         Usuario salvo = usuarioRepository.save(usuario);
@@ -59,9 +65,12 @@ public class UsuarioService {
                 .filter(u -> !u.getId().equals(id))
                 .ifPresent(u -> { throw new BusinessException("Email já em uso por outro usuário."); });
 
+        Loja loja = resolverLoja(request.lojaId());
+
         usuario.setNome(request.nome());
         usuario.setEmail(request.email());
         usuario.setPerfil(request.perfil());
+        usuario.setLojaAtual(loja);
         if (request.senha() != null && !request.senha().isBlank()) {
             usuario.setSenha(passwordEncoder.encode(request.senha()));
         }
@@ -102,4 +111,14 @@ public class UsuarioService {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário", id));
     }
-}
+
+    private Loja resolverLoja(Long lojaId) {
+        if (lojaId == null) return null;
+        return lojaRepository.findById(lojaId)
+                .orElseThrow(() -> new BusinessException("Loja não encontrada: " + lojaId));
+    }
+
+}  // ← fechamento da classe
+
+
+
