@@ -13,10 +13,6 @@ import java.util.Optional;
 @Repository
 public interface CaixaRepository extends JpaRepository<Caixa, Long> {
 
-    Optional<Caixa> findByStatus(Caixa.StatusCaixa status);
-
-    boolean existsByStatus(Caixa.StatusCaixa status);
-
     // ← ADICIONAR — filtrados por loja
     @Query("SELECT c FROM Caixa c WHERE c.status = :status " +
             "AND (:lojaId IS NULL OR c.loja.id = :lojaId)")
@@ -43,4 +39,6 @@ public interface CaixaRepository extends JpaRepository<Caixa, Long> {
     @Query("SELECT c FROM Caixa c WHERE (:lojaId IS NULL OR c.loja.id = :lojaId) " +
             "ORDER BY c.abertoEm DESC")
     List<Caixa> findAllByLojaOrderByAbertoemDesc(@Param("lojaId") Long lojaId);
+
+    List<Caixa> lojaId(Long lojaId);
 }

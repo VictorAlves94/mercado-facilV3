@@ -28,35 +28,39 @@ public class DashboardService {
     private final CaixaRepository caixaRepository;
     private final LojaService lojaService;
 
-    public DashboardResponse getResumoHoje() {
-        LocalDate hoje        = LocalDate.now();
-        LocalDateTime inicio  = hoje.atStartOfDay();
-        LocalDateTime fim     = hoje.plusDays(1).atStartOfDay();
 
-        // Vendas
-        BigDecimal totalVendas = vendaRepository.sumTotalNoPeriodo(inicio, fim);
-        long qtdVendas         = vendaRepository.countFinalizadasNoPeriodo(inicio, fim);
+    public DashboardResponse getResumoHoje(Long lojaId) {
+        LocalDate hoje       = LocalDate.now();
+        LocalDateTime inicio = hoje.atStartOfDay();
+        LocalDateTime fim    = hoje.plusDays(1).atStartOfDay();
+
+        // Se não veio lojaId no param, usa o do usuário logado como fallback
+        Long idLoja = (lojaId != null) ? lojaId : lojaService.getLojaIdDoUsuario();
+
+        // Vendas — agora filtradas por loja
+        BigDecimal totalVendas = vendaRepository.sumTotalNoPeriodo(inicio, fim, idLoja);
+        long qtdVendas         = vendaRepository.countFinalizadasNoPeriodo(inicio, fim, idLoja);
         BigDecimal ticketMedio = qtdVendas > 0
                 ? totalVendas.divide(BigDecimal.valueOf(qtdVendas), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
-        // Financeiro
-        BigDecimal totalDespesas  = despesaRepository.sumTotalNoPeriodo(hoje, hoje);
-        BigDecimal lucroEstimado  = totalVendas.subtract(totalDespesas);
+        // Despesas — agora filtradas por loja
+        BigDecimal totalDespesas = despesaRepository.sumTotalNoPeriodo(hoje, hoje, idLoja);
+        BigDecimal lucroEstimado = totalVendas.subtract(totalDespesas);
 
-        // Alertas de estoque
-        Long lojaId = lojaService.getLojaIdDoUsuario();
-        long estoqueBaixo    = produtoRepository.countEstoqueBaixo(lojaId);
-        long estoqueZerado   = produtoRepository.countEstoqueZerado(lojaId);
-        long validadeProxima = produtoRepository.findValidadeProxima(hoje.plusDays(7), lojaId).size();
-        long vencidos        = produtoRepository.findVencidos(hoje, lojaId).size();
+        // Alertas de estoque — já tinham lojaId, só troca a variável
+        long estoqueBaixo    = produtoRepository.countEstoqueBaixo(idLoja);
+        long estoqueZerado   = produtoRepository.countEstoqueZerado(idLoja);
+        long validadeProxima = produtoRepository.findValidadeProxima(hoje.plusDays(7), idLoja).size();
+        long vencidos        = produtoRepository.findVencidos(hoje, idLoja).size();
         long totalAlertas    = estoqueBaixo + estoqueZerado + validadeProxima + vencidos;
 
-        // Caixa atual
-        boolean caixaAberto = caixaRepository.existsByStatus(Caixa.StatusCaixa.ABERTO);
+        // Caixa — filtrado por loja
+        boolean caixaAberto = caixaRepository.existsByStatusAndLojaId(
+                Caixa.StatusCaixa.ABERTO, idLoja);
         CaixaResponse caixaAtual = caixaAberto
-                ? caixaRepository.findByStatus(Caixa.StatusCaixa.ABERTO)
-                        .map(CaixaResponse::from).orElse(null)
+                ? caixaRepository.findByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, idLoja)
+                  .map(CaixaResponse::from).orElse(null)
                 : null;
 
         return new DashboardResponse(

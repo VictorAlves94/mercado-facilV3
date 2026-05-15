@@ -20,7 +20,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +37,7 @@ class FinanceiroServiceTest {
     @Mock VendaRepository vendaRepository;
     @Mock FiadoRepository fiadoRepository;
     @Mock UsuarioRepository usuarioRepository;
+    @Mock LojaService lojaService;
     @InjectMocks FinanceiroService financeiroService;
     @Mock AuditService auditService;
 
@@ -105,9 +105,9 @@ class FinanceiroServiceTest {
 
         @BeforeEach
         void mockRepositories() {
-            when(vendaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("3000.00"));
-            when(vendaRepository.countFinalizadasNoPeriodo(any(), any())).thenReturn(50L);
-            when(despesaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("800.00"));
+            when(vendaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(new BigDecimal("3000.00"));
+            when(vendaRepository.countFinalizadasNoPeriodo(any(), any(), any())).thenReturn(50L);
+            when(despesaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(new BigDecimal("800.00"));
             when(despesaRepository.findTotalAgrupadoPorTipo(any(), any())).thenReturn(List.of(
                     new Object[]{"Energia Elétrica", new BigDecimal("300.00"), 1L},
                     new Object[]{"Funcionário", new BigDecimal("500.00"), 1L}
@@ -174,8 +174,8 @@ class FinanceiroServiceTest {
         @Test
         @DisplayName("Margem deve ser zero quando não há vendas")
         void gerarRelatorio_semVendas_margemZero() {
-            when(vendaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(BigDecimal.ZERO);
-            when(vendaRepository.countFinalizadasNoPeriodo(any(), any())).thenReturn(0L);
+            when(vendaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+            when(vendaRepository.countFinalizadasNoPeriodo(any(), any(), any())).thenReturn(0L);
 
             LocalDate ontem = LocalDate.now().minusDays(1);
             RelatorioFinanceiroResponse rel = financeiroService.gerarRelatorio(ontem, ontem);
@@ -193,8 +193,8 @@ class FinanceiroServiceTest {
         @Test
         @DisplayName("Saldo positivo quando vendas superam despesas")
         void getSaldoHoje_vendasMaiores_situacaoPositiva() {
-            when(vendaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("1200.00"));
-            when(despesaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("300.00"));
+            when(vendaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(new BigDecimal("1200.00"));
+            when(despesaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(new BigDecimal("300.00"));
 
             var saldo = financeiroService.getSaldoHoje();
 
@@ -205,8 +205,8 @@ class FinanceiroServiceTest {
         @Test
         @DisplayName("Saldo negativo quando despesas superam vendas")
         void getSaldoHoje_despesasMaiores_situacaoNegativa() {
-            when(vendaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("100.00"));
-            when(despesaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("500.00"));
+            when(vendaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(new BigDecimal("100.00"));
+            when(despesaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(new BigDecimal("500.00"));
 
             var saldo = financeiroService.getSaldoHoje();
 

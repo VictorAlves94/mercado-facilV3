@@ -14,7 +14,8 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/resumo")
-    public ResponseEntity<DashboardResponse> getResumoHoje() {
-        return ResponseEntity.ok(dashboardService.getResumoHoje());
+    public ResponseEntity<DashboardResponse> getResumoHoje(
+            @RequestParam(required = false) Long lojaId) {
+        return ResponseEntity.ok(dashboardService.getResumoHoje(lojaId));
     }
 }

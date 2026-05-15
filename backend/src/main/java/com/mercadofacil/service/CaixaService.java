@@ -68,7 +68,8 @@ public class CaixaService {
 
     @Transactional
     public CaixaResponse abrir(AbrirCaixaRequest request) {
-        if (caixaRepository.existsByStatus(Caixa.StatusCaixa.ABERTO)) {
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+        if (caixaRepository.existsByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, lojaId)) {
             throw CaixaException.caixaJaAberto();
         }
 
@@ -133,7 +134,8 @@ public class CaixaService {
 
     @Transactional
     public ResumoFechamentoCaixaResponse fechar(FecharCaixaRequest request) {
-        Caixa caixa = caixaRepository.findByStatus(Caixa.StatusCaixa.ABERTO)
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+        Caixa caixa = caixaRepository.findByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, lojaId)
                 .orElseThrow(CaixaException::semCaixaAberto);
 
         Usuario operador = getUsuarioLogado();
@@ -208,10 +210,10 @@ public class CaixaService {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     public Caixa getCaixaAbertoEntity() {
-        return caixaRepository.findByStatus(Caixa.StatusCaixa.ABERTO)
+        Long lojaId = lojaService.getLojaIdDoUsuario();
+        return caixaRepository.findByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, lojaId)
                 .orElseThrow(CaixaException::semCaixaAberto);
     }
-
     private Caixa findOrThrow(Long id) {
         return caixaRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Caixa", id));

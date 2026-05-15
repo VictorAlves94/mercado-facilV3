@@ -26,12 +26,13 @@ import static org.mockito.Mockito.*;
 class RelatorioVendasServiceTest {
 
     @Mock VendaRepository vendaRepository;
+    @Mock LojaService lojaService;
     @InjectMocks RelatorioVendasService relatorioService;
 
     @BeforeEach
     void setUp() {
-        when(vendaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(new BigDecimal("1500.00"));
-        when(vendaRepository.countFinalizadasNoPeriodo(any(), any())).thenReturn(10L);
+        when(vendaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(new BigDecimal("1500.00"));
+        when(vendaRepository.countFinalizadasNoPeriodo(any(), any(), any())).thenReturn(10L);
         when(vendaRepository.sumTotalPorFormaPagamento(any(), any(), eq(Venda.FormaPagamento.DINHEIRO))).thenReturn(new BigDecimal("600.00"));
         when(vendaRepository.sumTotalPorFormaPagamento(any(), any(), eq(Venda.FormaPagamento.PIX))).thenReturn(new BigDecimal("500.00"));
         when(vendaRepository.sumTotalPorFormaPagamento(any(), any(), eq(Venda.FormaPagamento.CARTAO_DEBITO))).thenReturn(new BigDecimal("250.00"));
@@ -87,8 +88,8 @@ class RelatorioVendasServiceTest {
         @Test
         @DisplayName("Ticket médio deve ser zero quando não há vendas")
         void gerarRelatorioPeriodo_semVendas_ticketMedioZero() {
-            when(vendaRepository.sumTotalNoPeriodo(any(), any())).thenReturn(BigDecimal.ZERO);
-            when(vendaRepository.countFinalizadasNoPeriodo(any(), any())).thenReturn(0L);
+            when(vendaRepository.sumTotalNoPeriodo(any(), any(), any())).thenReturn(BigDecimal.ZERO);
+            when(vendaRepository.countFinalizadasNoPeriodo(any(), any(), any())).thenReturn(0L);
 
             LocalDate ontem = LocalDate.now().minusDays(1);
             RelatorioVendasResponse rel = relatorioService.gerarRelatorioPeriodo(ontem, ontem);

@@ -22,63 +22,65 @@ import java.util.List;
 public class RelatorioVendasService {
 
     private final VendaRepository vendaRepository;
+    private final LojaService     lojaService;        // ← injetar
 
-    /**
-     * Relatório para um período personalizado.
-     * @param inicio data de início (inclusive)
-     * @param fim    data de fim (inclusive)
-     */
     public RelatorioVendasResponse gerarRelatorioPeriodo(LocalDate inicio, LocalDate fim) {
-        if (inicio.isAfter(fim)) {
+        if (inicio.isAfter(fim))
             throw new BusinessException("Data de início não pode ser posterior à data de fim.");
-        }
-        if (fim.isAfter(LocalDate.now())) {
+        if (fim.isAfter(LocalDate.now()))
             throw new BusinessException("Data de fim não pode ser uma data futura.");
-        }
 
+        Long lojaId = lojaService.getLojaIdDoUsuario();  // ← buscar lojaId
         LocalDateTime dtInicio = inicio.atStartOfDay();
         LocalDateTime dtFim    = fim.plusDays(1).atStartOfDay();
-
-        return buildRelatorio(inicio, fim, dtInicio, dtFim);
+        return buildRelatorio(inicio, fim, dtInicio, dtFim, lojaId);
     }
 
-    /** Relatório do dia de hoje. */
     public RelatorioVendasResponse gerarRelatorioHoje() {
+        Long lojaId  = lojaService.getLojaIdDoUsuario();
         LocalDate hoje = LocalDate.now();
-        return buildRelatorio(hoje, hoje, hoje.atStartOfDay(), hoje.plusDays(1).atStartOfDay());
+        return buildRelatorio(hoje, hoje,
+                hoje.atStartOfDay(), hoje.plusDays(1).atStartOfDay(), lojaId);
     }
 
-    /** Relatório da semana corrente (dom-sáb). */
     public RelatorioVendasResponse gerarRelatorioSemana() {
-        LocalDate hoje  = LocalDate.now();
+        Long lojaId  = lojaService.getLojaIdDoUsuario();
+        LocalDate hoje   = LocalDate.now();
         LocalDate inicio = hoje.minusDays(hoje.getDayOfWeek().getValue() % 7);
-        return buildRelatorio(inicio, hoje, inicio.atStartOfDay(), hoje.plusDays(1).atStartOfDay());
+        return buildRelatorio(inicio, hoje,
+                inicio.atStartOfDay(), hoje.plusDays(1).atStartOfDay(), lojaId);
     }
 
-    /** Relatório do mês corrente. */
     public RelatorioVendasResponse gerarRelatorioMes() {
-        LocalDate hoje  = LocalDate.now();
+        Long lojaId  = lojaService.getLojaIdDoUsuario();
+        LocalDate hoje   = LocalDate.now();
         LocalDate inicio = hoje.withDayOfMonth(1);
-        return buildRelatorio(inicio, hoje, inicio.atStartOfDay(), hoje.plusDays(1).atStartOfDay());
+        return buildRelatorio(inicio, hoje,
+                inicio.atStartOfDay(), hoje.plusDays(1).atStartOfDay(), lojaId);
     }
 
     // ─── Builder interno ─────────────────────────────────────────────────────
 
     private RelatorioVendasResponse buildRelatorio(
             LocalDate inicio, LocalDate fim,
-            LocalDateTime dtInicio, LocalDateTime dtFim) {
+            LocalDateTime dtInicio, LocalDateTime dtFim,
+            Long lojaId) {
 
-        BigDecimal totalVendas = vendaRepository.sumTotalNoPeriodo(dtInicio, dtFim);
-        long qtdVendas         = vendaRepository.countFinalizadasNoPeriodo(dtInicio, dtFim);
+        BigDecimal totalVendas = vendaRepository.sumTotalNoPeriodo(dtInicio, dtFim, lojaId);
+        long qtdVendas         = vendaRepository.countFinalizadasNoPeriodo(dtInicio, dtFim, lojaId);
 
         BigDecimal ticketMedio = qtdVendas > 0
                 ? totalVendas.divide(BigDecimal.valueOf(qtdVendas), 2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
-        BigDecimal totalDinheiro  = vendaRepository.sumTotalPorFormaPagamento(dtInicio, dtFim, Venda.FormaPagamento.DINHEIRO);
-        BigDecimal totalPix       = vendaRepository.sumTotalPorFormaPagamento(dtInicio, dtFim, Venda.FormaPagamento.PIX);
-        BigDecimal totalDebito    = vendaRepository.sumTotalPorFormaPagamento(dtInicio, dtFim, Venda.FormaPagamento.CARTAO_DEBITO);
-        BigDecimal totalCredito   = vendaRepository.sumTotalPorFormaPagamento(dtInicio, dtFim, Venda.FormaPagamento.CARTAO_CREDITO);
+        BigDecimal totalDinheiro = vendaRepository.sumTotalPorFormaPagamento(
+                dtInicio, dtFim, Venda.FormaPagamento.DINHEIRO);
+        BigDecimal totalPix      = vendaRepository.sumTotalPorFormaPagamento(
+                dtInicio, dtFim, Venda.FormaPagamento.PIX);
+        BigDecimal totalDebito   = vendaRepository.sumTotalPorFormaPagamento(
+                dtInicio, dtFim, Venda.FormaPagamento.CARTAO_DEBITO);
+        BigDecimal totalCredito  = vendaRepository.sumTotalPorFormaPagamento(
+                dtInicio, dtFim, Venda.FormaPagamento.CARTAO_CREDITO);
 
         long qtdCanceladas        = vendaRepository.countCanceladasNoPeriodo(dtInicio, dtFim);
         BigDecimal totalCancelado = vendaRepository.sumCanceladasNoPeriodo(dtInicio, dtFim);

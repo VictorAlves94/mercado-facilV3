@@ -5,10 +5,12 @@ import com.mercadofacil.dto.request.FecharCaixaRequest;
 import com.mercadofacil.dto.response.CaixaResponse;
 import com.mercadofacil.dto.response.ResumoFechamentoCaixaResponse;
 import com.mercadofacil.entity.Caixa;
+import com.mercadofacil.entity.Loja;
 import com.mercadofacil.entity.Usuario;
 import com.mercadofacil.entity.Venda;
 import com.mercadofacil.exception.CaixaException;
 import com.mercadofacil.repository.CaixaRepository;
+import com.mercadofacil.repository.MovimentacaoCaixaRepository;
 import com.mercadofacil.repository.UsuarioRepository;
 import com.mercadofacil.repository.VendaRepository;
 import org.junit.jupiter.api.*;
@@ -35,21 +37,28 @@ import static org.mockito.Mockito.*;
 @DisplayName("CaixaService — Testes Unitários")
 class CaixaServiceTest {
 
-    @Mock CaixaRepository caixaRepository;
-    @Mock VendaRepository vendaRepository;
+    @Mock CaixaRepository  caixaRepository;
+    @Mock VendaRepository  vendaRepository;
     @Mock UsuarioRepository usuarioRepository;
+    @Mock AuditService     auditService;
+    @Mock LojaService      lojaService;          // ← adicionado
+    @Mock
+    MovimentacaoCaixaRepository movimentacaoCaixaRepository;
     @InjectMocks CaixaService caixaService;
 
-    @Mock
-    AuditService auditService;
+    private static final Long   LOJA_ID       = 1L;
+    private static final String OPERADOR_EMAIL = "op@test.com";
 
     private Usuario operadorMock;
-    private Caixa caixaAbertoMock;
+    private Caixa   caixaAbertoMock;
+    private Loja    lojaMock;
 
     @BeforeEach
     void setUp() {
+        lojaMock = Loja.builder().id(LOJA_ID).nome("Loja Teste").build();
+
         operadorMock = Usuario.builder()
-                .id(1L).nome("Operador").email("op@test.com").build();
+                .id(1L).nome("Operador").email(OPERADOR_EMAIL).build();
 
         caixaAbertoMock = Caixa.builder()
                 .id(1L)
@@ -61,16 +70,23 @@ class CaixaServiceTest {
                 .totalCartaoCredito(BigDecimal.ZERO)
                 .totalVendas(new BigDecimal("700.00"))
                 .abertoPor(operadorMock)
+                .loja(lojaMock)
                 .abertoEm(LocalDateTime.now().minusHours(8))
                 .build();
 
         // mock SecurityContext
-        var auth = mock(Authentication.class);
-        when(auth.getName()).thenReturn("op@test.com");
-        var ctx = mock(SecurityContext.class);
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn(OPERADOR_EMAIL);
+        SecurityContext ctx = mock(SecurityContext.class);
         when(ctx.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(ctx);
-        when(usuarioRepository.findByEmail("op@test.com")).thenReturn(Optional.of(operadorMock));
+
+        when(usuarioRepository.findByEmail(OPERADOR_EMAIL))
+                .thenReturn(Optional.of(operadorMock));
+
+        // lojaService sempre retorna LOJA_ID e lojaMock
+        when(lojaService.getLojaIdDoUsuario()).thenReturn(LOJA_ID);
+        when(lojaService.getLojaDoUsuarioLogado()).thenReturn(lojaMock);
     }
 
     // ─── Abrir Caixa ──────────────────────────────────────────────────────────
@@ -81,16 +97,19 @@ class CaixaServiceTest {
         @Test
         @DisplayName("Deve abrir caixa com saldo inicial")
         void abrir_semCaixaAberto_abreCaixaComSucesso() {
-            when(caixaRepository.existsByStatus(Caixa.StatusCaixa.ABERTO)).thenReturn(false);
+            // usa existsByStatusAndLojaId agora
+            when(caixaRepository.existsByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, LOJA_ID))
+                    .thenReturn(false);
             when(caixaRepository.save(any())).thenAnswer(inv -> {
                 Caixa c = inv.getArgument(0);
-                c = Caixa.builder().id(1L).status(c.getStatus())
+                return Caixa.builder()
+                        .id(1L).status(c.getStatus())
                         .valorAbertura(c.getValorAbertura())
                         .totalDinheiro(BigDecimal.ZERO).totalPix(BigDecimal.ZERO)
                         .totalCartaoDebito(BigDecimal.ZERO).totalCartaoCredito(BigDecimal.ZERO)
                         .totalVendas(BigDecimal.ZERO)
-                        .abertoPor(operadorMock).abertoEm(LocalDateTime.now()).build();
-                return c;
+                        .abertoPor(operadorMock).loja(lojaMock)
+                        .abertoEm(LocalDateTime.now()).build();
             });
 
             CaixaResponse resp = caixaService.abrir(new AbrirCaixaRequest(new BigDecimal("150.00")));
@@ -101,11 +120,13 @@ class CaixaServiceTest {
         }
 
         @Test
-        @DisplayName("Não deve abrir se já existe caixa aberto")
+        @DisplayName("Não deve abrir se já existe caixa aberto na loja")
         void abrir_comCaixaJaAberto_lancaCaixaException() {
-            when(caixaRepository.existsByStatus(Caixa.StatusCaixa.ABERTO)).thenReturn(true);
+            when(caixaRepository.existsByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, LOJA_ID))
+                    .thenReturn(true);
 
-            assertThatThrownBy(() -> caixaService.abrir(new AbrirCaixaRequest(BigDecimal.ZERO)))
+            assertThatThrownBy(() ->
+                    caixaService.abrir(new AbrirCaixaRequest(BigDecimal.ZERO)))
                     .isInstanceOf(CaixaException.class)
                     .hasMessageContaining("Já existe um caixa aberto");
         }
@@ -119,7 +140,8 @@ class CaixaServiceTest {
         @Test
         @DisplayName("Deve fechar caixa e calcular resumo corretamente")
         void fechar_caixaAberto_retornaResumoCompleto() {
-            when(caixaRepository.findByStatus(Caixa.StatusCaixa.ABERTO))
+            // usa findByStatusAndLojaId agora
+            when(caixaRepository.findByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, LOJA_ID))
                     .thenReturn(Optional.of(caixaAbertoMock));
             when(vendaRepository.findFinalizadasNoPeriodo(any(), any()))
                     .thenReturn(List.of(
@@ -140,11 +162,12 @@ class CaixaServiceTest {
         }
 
         @Test
-        @DisplayName("Deve calcular diferença negativa quando operador informa menos que o esperado")
+        @DisplayName("Deve calcular diferença negativa quando operador informa menos")
         void fechar_valorInformadoMenor_diferencaNegativa() {
-            when(caixaRepository.findByStatus(Caixa.StatusCaixa.ABERTO))
+            when(caixaRepository.findByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, LOJA_ID))
                     .thenReturn(Optional.of(caixaAbertoMock));
-            when(vendaRepository.findFinalizadasNoPeriodo(any(), any())).thenReturn(List.of());
+            when(vendaRepository.findFinalizadasNoPeriodo(any(), any()))
+                    .thenReturn(List.of());
             when(caixaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             // esperado = 100 + 500 = 600, informado = 550 → diferença = -50
@@ -155,12 +178,13 @@ class CaixaServiceTest {
         }
 
         @Test
-        @DisplayName("Não deve fechar se não há caixa aberto")
+        @DisplayName("Não deve fechar se não há caixa aberto na loja")
         void fechar_semCaixaAberto_lancaException() {
-            when(caixaRepository.findByStatus(Caixa.StatusCaixa.ABERTO))
+            when(caixaRepository.findByStatusAndLojaId(Caixa.StatusCaixa.ABERTO, LOJA_ID))
                     .thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> caixaService.fechar(new FecharCaixaRequest(BigDecimal.ZERO, null)))
+            assertThatThrownBy(() ->
+                    caixaService.fechar(new FecharCaixaRequest(BigDecimal.ZERO, null)))
                     .isInstanceOf(CaixaException.class);
         }
     }

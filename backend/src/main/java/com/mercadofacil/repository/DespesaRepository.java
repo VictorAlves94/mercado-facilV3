@@ -17,8 +17,17 @@ public interface DespesaRepository extends JpaRepository<Despesa, Long> {
 
     List<Despesa> findByDataDespesaOrderByCriadoEmDesc(LocalDate data);
 
-    @Query("SELECT COALESCE(SUM(d.valor), 0) FROM Despesa d WHERE d.dataDespesa >= :inicio AND d.dataDespesa <= :fim")
-    BigDecimal sumTotalNoPeriodo(@Param("inicio") LocalDate inicio, @Param("fim") LocalDate fim);
+    @Query("""
+    SELECT COALESCE(SUM(d.valor), 0)
+    FROM Despesa d
+    WHERE d.dataDespesa >= :inicio
+      AND d.dataDespesa <= :fim
+      AND d.loja.id = :lojaId
+""")
+    BigDecimal sumTotalNoPeriodo(
+            @Param("inicio") LocalDate inicio,
+            @Param("fim")    LocalDate fim,
+            @Param("lojaId") Long lojaId);
 
     @Query("""
         SELECT COALESCE(SUM(d.valor), 0)

@@ -13,7 +13,7 @@ public record UsuarioRequest(
     @Email(message = "Email inválido")
     String email,
 
-    
+
     String senha,
 
     @NotNull(message = "Perfil é obrigatório")
