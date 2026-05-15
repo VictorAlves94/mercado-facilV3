@@ -63,7 +63,6 @@ public class CaixaController {
 
     /** Fecha o caixa atual e retorna o resumo completo */
     @PostMapping("/fechar")
-    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
     public ResponseEntity<ResumoFechamentoCaixaResponse> fechar(
             @Valid @RequestBody FecharCaixaRequest request) {
         return ResponseEntity.ok(caixaService.fechar(request));
